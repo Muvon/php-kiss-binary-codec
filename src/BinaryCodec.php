@@ -21,6 +21,14 @@ define('BC_CHAR',   "\x0b");
 define('BC_UCHAR',  "\x0c");
 define('BC_STR',    "\x0d");
 define('BC_LIST',   "\x0e");
+define('BC_LIST_UINT1', "\x14");
+define('BC_LIST_UINT2', "\x15");
+define('BC_LIST_UINT4', "\x16");
+define('BC_LIST_UINT8', "\x16");
+define('BC_LIST_INT1', "\x17");
+define('BC_LIST_INT2', "\x18");
+define('BC_LIST_INT4', "\x19");
+define('BC_LIST_INT8', "\x1a");
 define('BC_MAP',    "\x0f");
 define('BC_NUM',    "\x10");
 define('BC_NULL',   "\x11");
@@ -50,6 +58,14 @@ final class BinaryCodec {
     BC_UCHAR => 1,
     BC_STR => 4,
     BC_LIST => 4,
+    BC_LIST_UINT1 => 4,
+    BC_LIST_UINT2 => 4,
+    BC_LIST_UINT4 => 4,
+    BC_LIST_UINT8 => 4,
+    BC_LIST_INT1 => 4,
+    BC_LIST_INT2 => 4,
+    BC_LIST_INT4 => 4,
+    BC_LIST_INT8 => 4,
     BC_MAP => 4,
     BC_NUM => 1,
     BC_NULL => 1,
@@ -94,13 +110,25 @@ final class BinaryCodec {
         $bin = b'';
         foreach ($data as $k => &$v) {
           if (is_array($v)) {
-            $bin .= $this->encode($v, key($v) ? BC_MAP : BC_LIST, $this->encodeKeyName($k));
-          } else {
             $k_type = $this->getKeyType($k);
-            $bin .= $this->encode($v, $k_type !== BC_RAW ? $k_type : $this->getDataType($v), $this->encodeKeyName($k));
+            $bin .= $this->encode($v, key($v) ? BC_MAP : ($k_type !== BC_RAW ? $k_type : BC_LIST), $this->encodeKeyName($k));
+          } else {
+            $bin .= $this->encode($v, $this->getDataType($v), $this->encodeKeyName($k));
           }
         }
 
+        return $type . $key . pack($sz_fmt, strlen($bin)) . $bin;
+        break;
+
+      case BC_LIST_INT1:
+      case BC_LIST_INT2:
+      case BC_LIST_INT4:
+      case BC_LIST_INT8:
+      case BC_LIST_UINT1:
+      case BC_LIST_UINT2:
+      case BC_LIST_UINT4:
+      case BC_LIST_UINT8:
+        $bin = pack($this->getPackType($type), ...$data);
         return $type . $key . pack($sz_fmt, strlen($bin)) . $bin;
         break;
 
@@ -201,8 +229,20 @@ final class BinaryCodec {
         return $this->unpackType($binary, $type);
         break;
 
+      case BC_LIST_INT1:
+      case BC_LIST_INT2:
+      case BC_LIST_INT4:
+      case BC_LIST_INT8:
+      case BC_LIST_UINT1:
+      case BC_LIST_UINT2:
+      case BC_LIST_UINT4:
+      case BC_LIST_UINT8:
+        return array_values(unpack($this->getPackType($type), $binary));
+        break;
+
       case BC_NUM:
         return gmp_strval(gmp_init(bin2hex($binary), 16), 10);
+        break;
 
       // case BC_STR:
       //   return gzdecode($binary);
@@ -259,19 +299,27 @@ final class BinaryCodec {
 
   protected function getPackType(string $type): string {
     return match($type) {
-      BC_HEX => 'h*',
+      BC_HEX => 'h',
       BC_CHAR => 'c',
       BC_UCHAR => 'C',
       BC_INT1 => 'c',
-      BC_INT2 => 's*',
+      BC_INT2 => 's',
       BC_UINT1 => 'C',
-      BC_UINT2 => 'n*',
-      BC_INT4 => 'l*',
-      BC_UINT4 => 'N*',
-      BC_INT8 => 'q*',
-      BC_UINT8 => 'J*',
-      BC_FLOAT => 'G*',
-      BC_DOUBLE => 'E*',
+      BC_UINT2 => 'n',
+      BC_INT4 => 'l',
+      BC_UINT4 => 'N',
+      BC_INT8 => 'q',
+      BC_UINT8 => 'J',
+      BC_FLOAT => 'G',
+      BC_DOUBLE => 'E',
+      BC_LIST_UINT1 => 'C*',
+      BC_LIST_UINT2 => 'n*',
+      BC_LIST_UINT4 => 'N*',
+      BC_LIST_UINT8 => 'J*',
+      BC_LIST_INT1 => 'c*',
+      BC_LIST_INT2 => 's*',
+      BC_LIST_INT4 => 'l*',
+      BC_LIST_INT8 => 'q*',
       default => 'a*',
     };
   }
