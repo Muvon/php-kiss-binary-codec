@@ -19,7 +19,7 @@ Each binary type has own max size definition that prepended to binary result of 
 Here is full list of contants
 
 | Constant | Max size | Info |
-|-|-|
+|-|-|-|
 | BC_RAW | 4 bytes | Raw data representation |
 | BC_BOOL | 1 byte | Boolean can be true or false only |
 | BC_INT1 | 1 byte | 8 bit signed integer |
