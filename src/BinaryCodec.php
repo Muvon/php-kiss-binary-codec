@@ -29,6 +29,9 @@ define('BC_LIST_INT1', "\x17");
 define('BC_LIST_INT2', "\x18");
 define('BC_LIST_INT4', "\x19");
 define('BC_LIST_INT8', "\x1a");
+define('BC_LIST_HEX16', "\x1b");
+define('BC_LIST_HEX32', "\x1c");
+define('BC_LIST_HEX64', "\x1d");
 define('BC_MAP',    "\x0f");
 define('BC_NUM',    "\x10");
 define('BC_NULL',   "\x11");
@@ -66,6 +69,9 @@ final class BinaryCodec {
     BC_LIST_INT2 => 4,
     BC_LIST_INT4 => 4,
     BC_LIST_INT8 => 4,
+    BC_LIST_HEX16 => 4,
+    BC_LIST_HEX32 => 4,
+    BC_LIST_HEX64 => 4,
     BC_MAP => 4,
     BC_NUM => 1,
     BC_NULL => 1,
@@ -129,6 +135,13 @@ final class BinaryCodec {
       case BC_LIST_UINT4:
       case BC_LIST_UINT8:
         $bin = pack($this->getPackType($type), ...$data);
+        return $type . $key . pack($sz_fmt, strlen($bin)) . $bin;
+        break;
+
+      case BC_LIST_HEX16:
+      case BC_LIST_HEX32:
+      case BC_LIST_HEX64:
+        $bin = pack(str_repeat('h*', sizeof($data)), ...$data);
         return $type . $key . pack($sz_fmt, strlen($bin)) . $bin;
         break;
 
@@ -238,6 +251,17 @@ final class BinaryCodec {
       case BC_LIST_UINT4:
       case BC_LIST_UINT8:
         return array_values(unpack($this->getPackType($type), $binary));
+        break;
+
+      case BC_LIST_HEX16:
+      case BC_LIST_HEX32:
+      case BC_LIST_HEX64:
+        $sz = match($type) {
+          BC_LIST_HEX16 => 32,
+          BC_LIST_HEX32 => 64,
+          BC_LIST_HEX64 => 128,
+        };
+        return str_split(bin2hex($binary), $sz);
         break;
 
       case BC_NUM:
