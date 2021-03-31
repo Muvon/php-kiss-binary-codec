@@ -142,7 +142,7 @@ final class BinaryCodec {
       case BC_LIST_HEX16:
       case BC_LIST_HEX32:
       case BC_LIST_HEX64:
-        $bin = pack(str_repeat('h*', sizeof($data)), ...$data);
+        $bin = pack(str_repeat('H*', sizeof($data)), ...$data);
         return $type . $key . pack($sz_fmt, strlen($bin)) . $bin;
         break;
 

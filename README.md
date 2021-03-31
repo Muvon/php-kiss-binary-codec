@@ -69,6 +69,8 @@ Size is presented in bytes for encoded data.
 - [x] Integer encode
 - [x] Float encode
 - [x] Hex encode
+- [x] Int list encode
+- [x] Hex list encode
 - [x] Null encode
 - [x] List encode
 - [x] Map encode
