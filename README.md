@@ -38,6 +38,18 @@ Here is full list of contants
 | BC_UCHAR | 1 byte | 8 bit unsigned char |
 | BC_STR | 4 bytes | Just string data |
 | BC_LIST | 4 bytes | Simple array that represent list with indexed keys |
+| BC_LIST_UINT1 | 4 bytes | List of unsigned 8 bit integers |
+| BC_LIST_UINT2 | 4 bytes | List of unsigned 16 bit integers |
+| BC_LIST_UINT4 | 4 bytes | List of unsigned 32 bit integers |
+| BC_LIST_UINT8 | 4 bytes | List of unsigned 64 bit integers |
+| BC_LIST_INT1 | 4 bytes | List of signed 8 bit integers |
+| BC_LIST_INT2 | 4 bytes | List of signed 16 bit integers |
+| BC_LIST_INT4 | 4 bytes | List of signed 32 bit integers |
+| BC_LIST_INT8 | 4 bytes | List of signed 64 bit integers |
+| BC_LIST_HEX16 | 4 bytes | List of hex strings 16 bytes length (32 bytes as string) |
+| BC_LIST_HEX32 | 4 bytes | List of hex strings 32 bytes length (64 bytes as string) |
+| BC_LIST_HEX64 | 4 bytes | List of hex strings 64 bytes length (128 bytes as string) |
+| BC_LIST_STR | 4 bytes | List of string that concatenates with null byte and explode by it |
 | BC_MAP | 4 bytes | Hash-map that is simple array but with associative keys |
 | BC_NUM | 1 byte | Actually string representation of real big integer |
 | BC_NULL | 1 byte | NULL value |
