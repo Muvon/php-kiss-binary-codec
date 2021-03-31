@@ -115,12 +115,11 @@ final class BinaryCodec {
       case BC_MAP:
         $bin = b'';
         foreach ($data as $k => &$v) {
-          if (is_array($v)) {
-            $k_type = $this->getKeyType($k);
-            $bin .= $this->encode($v, key($v) ? BC_MAP : ($k_type !== BC_RAW ? $k_type : BC_LIST), $this->encodeKeyName($k));
-          } else {
-            $bin .= $this->encode($v, $this->getDataType($v), $this->encodeKeyName($k));
+          $k_type = $type === BC_MAP ? $this->getKeyType($k) : BC_RAW;
+          if ($k_type === BC_RAW) {
+            $k_type = $this->getDataType($v);
           }
+          $bin .= $this->encode($v, $k_type, $this->encodeKeyName($k));
         }
 
         return $type . $key . pack($sz_fmt, strlen($bin)) . $bin;
@@ -323,7 +322,7 @@ final class BinaryCodec {
 
   protected function getPackType(string $type): string {
     return match($type) {
-      BC_HEX => 'h',
+      BC_HEX => 'H*',
       BC_CHAR => 'c',
       BC_UCHAR => 'C',
       BC_INT1 => 'c',
