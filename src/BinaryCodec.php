@@ -86,7 +86,6 @@ final class BinaryCodec {
   }
 
   protected function encode(mixed $data, string $type, ?string $key = "\x00"): string {
-
     $sz_len = static::SZ_MAP[$type];
     $sz_fmt = static::PK_MAP[$sz_len];
     switch ($type) {
@@ -97,7 +96,8 @@ final class BinaryCodec {
           if (is_array($v)) {
             $bin .= $this->encode($v, key($v) ? BC_MAP : BC_LIST, $this->encodeKeyName($k));
           } else {
-            $bin .= $this->encode($v, $this->getKeyType($k), $this->encodeKeyName($k));
+            $k_type = $this->getKeyType($k);
+            $bin .= $this->encode($v, $k_type !== BC_RAW ? $k_type : $this->getDataType($v), $this->encodeKeyName($k));
           }
         }
 
@@ -111,7 +111,6 @@ final class BinaryCodec {
       case BC_HEX:
       case BC_CHAR:
       case BC_UCHAR:
-      case BC_INT1:
       case BC_INT2:
       case BC_INT4:
       case BC_INT8:
@@ -120,6 +119,8 @@ final class BinaryCodec {
       case BC_UINT8:
       case BC_FLOAT:
       case BC_DOUBLE:
+      case BC_INT1:
+      case BC_UINT1:
         return $this->packType($data, $type, $key);
         break;
 
@@ -191,6 +192,7 @@ final class BinaryCodec {
       case BC_INT2:
       case BC_INT4:
       case BC_INT8:
+      case BC_UINT1:
       case BC_UINT2:
       case BC_UINT4:
       case BC_UINT8:
@@ -239,6 +241,10 @@ final class BinaryCodec {
 
   protected function getDataType(mixed $data): string {
     return match(true) {
+      is_int($data) && $data > 0 && $data < 255 => BC_UINT1,
+      is_int($data) && $data > -128 && $data < 127 => BC_INT1,
+      is_int($data) && $data > 0 && $data < 65535 => BC_UINT2,
+      is_int($data) && $data > -32767 && $data < 32768 => BC_INT2,
       is_int($data) => BC_INT8,
       is_float($data) => BC_DOUBLE,
       is_bool($data) => BC_BOOL,
@@ -258,14 +264,15 @@ final class BinaryCodec {
       BC_UCHAR => 'C',
       BC_INT1 => 'c',
       BC_INT2 => 's*',
-      BC_UINT2 => 'n*',
       BC_UINT1 => 'C',
+      BC_UINT2 => 'n*',
       BC_INT4 => 'l*',
       BC_UINT4 => 'N*',
       BC_INT8 => 'q*',
       BC_UINT8 => 'J*',
       BC_FLOAT => 'G*',
       BC_DOUBLE => 'E*',
+      default => 'a*',
     };
   }
 }

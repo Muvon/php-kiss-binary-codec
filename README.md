@@ -1,14 +1,15 @@
 # php-kiss-binary-codec
+
 Binary codec for encoding multiple structures with predefined config
 
 ## Encoder flow
 
 Each encoded field has next structure
 
-1 byte - binary type
-1 byte - binary key
-1-4 byte - size of binary encoded data depends on binary type
-x byte - body
+- 1 byte - binary type
+- 1 byte - binary key
+- 1-4 byte - size of binary encoded data depends on binary type
+- x byte - body
 
 ## Supported binary types
 
