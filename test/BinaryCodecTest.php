@@ -40,6 +40,21 @@ class BinaryCodecTest extends TestCase {
     ]);
   }
 
+  public function testIntListEncode(): void {
+    $Codec = BinaryCodec::create([
+      'list_uint1' => BC_LIST_UINT1,
+      'list_uint2' => BC_LIST_UINT2,
+      'list_uint4' => BC_LIST_UINT4,
+      'list_uint8' => BC_LIST_UINT8,
+    ]);
+    $this->testInputs([
+      ['list_uint1' => range(1, 100)],
+      ['list_uint2' => range(2 ** 16 - 100, 2 ** 16 - 1)],
+      ['list_uint4' => range(2 ** 32 - 100, 2 ** 32 - 1)],
+      ['list_uint8' => [2 ** 48, 2 ** 49, 2 ** 50, 2 ** 51, 2 ** 52, 2 ** 56, 2 ** 60 - mt_rand(1, 100)]],
+    ], $Codec);
+  }
+
   public function testNullEncode(): void {
     $this->testInputs([null, [null, null, null, 2]]);
   }
