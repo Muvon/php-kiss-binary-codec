@@ -56,19 +56,17 @@ final class BinaryCodec {
             $idx = array_search($k, $this->key_map);
           }
           $this->format[] = BC_KEY . 'C';
-          array_push($parts, $idx);
+          $parts[] = $idx;
         }
 
         // Can be list or hash array
         if (is_array($v)) {
           $sz = sizeof($v);
-          if (key($v) === 0 || $sz === 0) {
-            $this->format[] = BC_LIST . 'N';
-            array_push($parts, $sz);
-          } else {
-            $this->format[] = BC_HASH . 'N';
-            array_push($parts, $sz);
-          }
+          $this->format[] = (key($v) === 0 || $sz === 0)
+            ? BC_LIST . 'N'
+            : BC_HASH . 'N'
+          ;
+          $parts[] = $sz;
         }
 
         array_push($parts, ...$this->encode($v));
@@ -89,24 +87,22 @@ final class BinaryCodec {
   protected function decode(string $meta, string $binary): mixed {
     $i = 0;
     $keys = [];
-    $format = strtok($meta, "\0");
+    $format = '';
+    foreach (explode('/', strtok($meta, "\0")) as $f) {
+      $key = 'n' . ($i++);
+      $prefix = match ($f[0]) {
+        BC_NULL, BC_NUM, BC_BOOL, BC_LIST, BC_KEY, BC_HASH => substr($f, 1),
+        default => $f,
+      };
+
+      if ($prefix !== $f) {
+        $keys[$key] = $f[0];
+      }
+
+      $format .= $prefix . $key . '/';
+    }
+    $format = rtrim($format, '/');
     $key_map = explode('/', strtok("\0"));
-    $format = implode('/', array_map(
-      function ($item) use (&$i, &$keys) {
-        $key = 'n' . ($i++);
-        $prefix = match ($item[0]) {
-          BC_NULL, BC_NUM, BC_BOOL, BC_LIST, BC_KEY, BC_HASH => substr($item, 1),
-          default => $item,
-        };
-
-        if ($prefix !== $item) {
-          $keys[$key] = $item[0];
-        }
-
-        return $prefix . $key;
-      },
-      explode('/', $format)
-    ));
     $result = null;
     $ref = &$result;
     $path = [];
@@ -114,7 +110,6 @@ final class BinaryCodec {
     $i = 0;
     $n = 0;
 
-    $prev = null;
     foreach (unpack($format, $binary) as $k => &$v) {
       if (isset($keys[$k])) {
         $v = match ($keys[$k]) {
@@ -160,12 +155,10 @@ final class BinaryCodec {
           $path[] = $h_key;
           continue;
         }
-
-        $prev = &$keys[$k];
       }
 
       // Write data to ref logic
-      if (is_array($ref)) {
+      if (isset($ref)) {
         $ref[$i++] = $v;
       } else {
         $ref = $v;
@@ -243,27 +236,4 @@ final class BinaryCodec {
 
     return $format;
   }
-
-  // protected function getPackType(string $type): string {
-  //   return match($type) {
-  //     BC_HEX => 'H*',
-  //     BC_CHAR => 'c',
-  //     BC_UCHAR => 'C',
-  //     BC_INT4 => 'l',
-  //     BC_UINT4 => 'N',
-  //     BC_INT8 => 'q',
-  //     BC_UINT8 => 'J',
-  //     BC_FLOAT => 'G',
-  //     BC_DOUBLE => 'E',
-  //     BC_LIST_UINT1 => 'C*',
-  //     BC_LIST_UINT2 => 'n*',
-  //     BC_LIST_UINT4 => 'N*',
-  //     BC_LIST_UINT8 => 'J*',
-  //     BC_LIST_INT1 => 'c*',
-  //     BC_LIST_INT2 => 's*',
-  //     BC_LIST_INT4 => 'l*',
-  //     BC_LIST_INT8 => 'q*',
-  //     default => 'a*',
-  //   };
-  // }
 }
