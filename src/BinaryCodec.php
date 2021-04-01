@@ -12,6 +12,7 @@ define('BC_NULL',   "\x05");
 define('BC_HASH',   "\x06");
 final class BinaryCodec {
   protected array $key_map;
+  protected int $key_idx = 0;
   protected array $format;
 
   protected final function __construct() {}
@@ -22,6 +23,7 @@ final class BinaryCodec {
 
   public function pack(array $data): string {
     $this->format = [];
+    $this->key_idx = 0;
     $this->key_map = [];
 
     $parts = [];
@@ -30,7 +32,8 @@ final class BinaryCodec {
 
     array_push($parts, ...$this->encode($data));
     $format_str = implode('/', $this->format);
-    $flow = gzencode($format_str . "\0" . implode("/", $this->key_map));
+    $flow = gzencode($format_str . "\0" . implode("/", array_keys($this->key_map)));
+
     return pack(
       'Na*' . strtr($format_str, [
         '/' => '', BC_HASH => '', BC_KEY => '',
@@ -49,14 +52,11 @@ final class BinaryCodec {
       foreach ($data as $k => $v) {
         // First we do hash map key cuz it can contain list
         if (is_string($k)) {
-          if (!in_array($k, $this->key_map)) {
-            $this->key_map[] = $k;
-            $idx = sizeof($this->key_map) - 1;
-          } else {
-            $idx = array_search($k, $this->key_map);
+          if (!isset($this->key_map[$k])) {
+            $this->key_map[$k] = $this->key_idx++;
           }
           $this->format[] = BC_KEY . 'C';
-          $parts[] = $idx;
+          $parts[] = $this->key_map[$k];
         }
 
         // Can be list or hash array
