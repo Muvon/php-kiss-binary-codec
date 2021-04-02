@@ -33,18 +33,18 @@ class BinaryCodecTest extends TestCase {
 
   public function testFloatEncode(): void {
     $this->testInputs([
-      [1.2315324234],
+      [1.2315324234, 1447223.7732],
+      [lcg_value(), 0.1232333],
       [lcg_value()],
-      [lcg_value()],
-      [-lcg_value()],
+      [-lcg_value(), -1332222.3333],
       [lcg_value() * 100000],
     ]);
   }
 
   public function testHexEncode(): void {
     $this->testInputs([
-      ['0000112233'], 
-      ['1f1d0032'], 
+      ['0000112233'],
+      ['1f1d0032'],
       ['00000000000000000448ee09360b6363d9a32fd623ca2fa299b6bd9236df3461'],
       ['3da1843c63e2cbb3b4ed4694921ddfbcd911fe5c0b8bd31637a444b9bbf42879'],
       ['89717217b88b']
@@ -70,8 +70,26 @@ class BinaryCodecTest extends TestCase {
 
   public function testNullEncode(): void {
     $this->testInputs([
-      [null], 
-      [null, null, null, 2]
+      [null],
+      [null, null, null, 2],
+      ['key' => null]
+    ]);
+  }
+
+  public function testIntAsStringEncode(): void {
+    $this->testInputs([
+      ['236893652839462389462398462389642936489236423894'],
+      ['1123182361289631289368912361289648963298462398462936432'],
+      ['6654752348752347823684753287235478532847523784582376487632847532784582374582345823854782358423'],
+    ]);
+  }
+
+  public function testFloatAsStringEncode(): void {
+    $this->testInputs([
+      ['1.3424234234', '0.12318237983648236428936423894', 'a.123970139123'],
+      ['0.123919023619028368a'],
+      ['1.2123123123', '0.23423423423423'],
+      ['000123.123123123']
     ]);
   }
 
