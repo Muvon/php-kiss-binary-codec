@@ -207,7 +207,7 @@ final class BinaryCodec {
 
     if ($format === 'a') {
       switch (true) {
-        case is_string($data) && is_numeric($data) && $data[0] !== '0':
+        case is_string($data) && is_numeric($data) && $data[0] !== '0' && trim($data, '0..9') === '':
           $val = gmp_strval(gmp_init($data, 10), 16);
           if (strlen($val) % 2 !== 0) {
             $val = '0' . $val;
