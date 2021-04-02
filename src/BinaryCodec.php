@@ -221,7 +221,7 @@ final class BinaryCodec {
           $data = hex2bin($val);
           break;
 
-        case is_numeric($data) && str_contains($data, '.') && (ltrim($data, '0') === '.' || $data[0] !== '0'):
+        case is_numeric($data) && str_contains($data, '.') && (ltrim($data, '0')[0] === '.' || $data[0] !== '0'):
           $fraction = strlen($data) - strpos($data, '.') - 1;
           $val = gmp_strval(gmp_init(bcmul($data, gmp_strval(gmp_pow(10, $fraction)), 0), 10), 16);
           if (strlen($val) % 2 !== 0) {
