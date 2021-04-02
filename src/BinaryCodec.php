@@ -1,8 +1,6 @@
 <?php
 namespace Muvon\KISS;
 
-use Error;
-
 // Max \x06
 define('BC_BOOL',   "\x01");
 define('BC_LIST',   "\x02");
@@ -10,6 +8,7 @@ define('BC_KEY',    "\x03");
 define('BC_NUM',    "\x04");
 define('BC_NULL',   "\x05");
 define('BC_HASH',   "\x06");
+
 final class BinaryCodec {
   protected array $key_map;
   protected int $key_idx = 0;
@@ -79,7 +78,7 @@ final class BinaryCodec {
     }
   }
 
-  public function unpack(string $binary): mixed {
+  public function unpack(string $binary): array {
     $meta_len = hexdec(bin2hex($binary[0] . $binary[1] . $binary[2] . $binary[3]));
     return $this->decode(gzdecode(substr($binary, 4, $meta_len)), substr($binary, 4 + $meta_len));
   }
@@ -236,4 +235,12 @@ final class BinaryCodec {
 
     return $format;
   }
+}
+
+function binary_pack(array $data): string {
+  return BinaryCodec::create()->pack($data);
+}
+
+function binary_unpack(string $binary): array {
+  return BinaryCodec::create()->unpack($binary);
 }
