@@ -10,6 +10,8 @@ define('BC_NULL',   "\x05");
 define('BC_HASH',   "\x06");
 
 final class BinaryCodec {
+  const VERSION = 1;
+
   protected array $key_map;
   protected int $key_idx = 0;
   protected array $format;
@@ -34,11 +36,12 @@ final class BinaryCodec {
     $flow = gzencode($format_str . "\0" . implode("/", array_keys($this->key_map)));
 
     return pack(
-      'Na*' . strtr($format_str, [
+      'CNa*' . strtr($format_str, [
         '/' => '', BC_HASH => '', BC_KEY => '',
         BC_LIST => '', BC_BOOL => '', BC_NULL => '',
         BC_NUM => ''
       ]),
+      static::VERSION,
       strlen($flow),
       $flow,
       ...$parts
@@ -79,8 +82,9 @@ final class BinaryCodec {
   }
 
   public function unpack(string $binary): array {
-    $meta_len = hexdec(bin2hex($binary[0] . $binary[1] . $binary[2] . $binary[3]));
-    return $this->decode(gzdecode(substr($binary, 4, $meta_len)), substr($binary, 4 + $meta_len));
+    $version = unpack('C', $binary[0])[1];
+    $meta_len = hexdec(bin2hex($binary[1] . $binary[2] . $binary[3] . $binary[4]));
+    return $this->decode(gzdecode(substr($binary, 5, $meta_len)), substr($binary, 5 + $meta_len));
   }
 
   protected function decode(string $meta, string $binary): mixed {

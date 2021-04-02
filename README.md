@@ -10,6 +10,7 @@ Encoder uses pack to encode and unpack to decode with special modifications and 
 
 Binary contains of data
 
+- 1 byte protocol version
 - 4 bytes size of meta
 - x bytes meta data with pack info and keys encoded with gzip
 - x bytes encoded binary data
