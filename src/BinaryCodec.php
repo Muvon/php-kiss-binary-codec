@@ -1,13 +1,14 @@
 <?php
 namespace Muvon\KISS;
 
-// Max \x06
+// Max \x07
 define('BC_BOOL',   "\x01");
 define('BC_LIST',   "\x02");
 define('BC_KEY',    "\x03");
 define('BC_NUM',    "\x04");
 define('BC_NULL',   "\x05");
 define('BC_HASH',   "\x06");
+define('BC_DEC',    "\x07");
 
 final class BinaryCodec {
   const VERSION = 1;
@@ -39,7 +40,7 @@ final class BinaryCodec {
       'CNa*' . strtr($format_str, [
         '/' => '', BC_HASH => '', BC_KEY => '',
         BC_LIST => '', BC_BOOL => '', BC_NULL => '',
-        BC_NUM => ''
+        BC_NUM => '', BC_DEC => ''
       ]),
       static::VERSION,
       strlen($flow),
@@ -94,7 +95,7 @@ final class BinaryCodec {
     foreach (explode('/', strtok($meta, "\0")) as $f) {
       $key = 'n' . ($i++);
       $prefix = match ($f[0]) {
-        BC_NULL, BC_NUM, BC_BOOL, BC_LIST, BC_KEY, BC_HASH => substr($f, 1),
+        BC_NULL, BC_NUM, BC_BOOL, BC_LIST, BC_KEY, BC_HASH, BC_DEC => substr($f, 1),
         default => $f,
       };
 
@@ -119,6 +120,7 @@ final class BinaryCodec {
           BC_NULL => null,
           BC_NUM => gmp_strval(gmp_init(bin2hex($v), 16)),
           BC_BOOL => !!$v,
+          BC_DEC => bcdiv(gmp_strval(gmp_init(bin2hex(substr($v, 1)), 16), 10), gmp_strval(gmp_pow(10, $fraction = unpack('C', $v[0])[1])), $fraction),
           default => $v,
         };
 
@@ -210,13 +212,23 @@ final class BinaryCodec {
 
     if ($format === 'a') {
       switch (true) {
-        case is_string($data) && is_numeric($data) && $data[0] !== '0' && trim($data, '0..9') === '':
+        case is_numeric($data) && $data[0] !== '0' && trim($data, '0..9') === '':
           $val = gmp_strval(gmp_init($data, 10), 16);
           if (strlen($val) % 2 !== 0) {
             $val = '0' . $val;
           }
           $format = BC_NUM . 'a';
           $data = hex2bin($val);
+          break;
+
+        case is_numeric($data) && str_contains($data, '.') && (ltrim($data, '0') === '.' || $data[0] !== '0'):
+          $fraction = strlen($data) - strpos($data, '.') - 1;
+          $val = gmp_strval(gmp_init(bcmul($data, gmp_strval(gmp_pow(10, $fraction)), 0), 10), 16);
+          if (strlen($val) % 2 !== 0) {
+            $val = '0' . $val;
+          }
+          $format = BC_DEC . 'a';
+          $data = pack('C', $fraction) . hex2bin($val);
           break;
 
         case is_string($data) && trim($data, '0..9A..Fa..f') == '':
