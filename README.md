@@ -51,5 +51,6 @@ The coded uses automatic detection data and encode is with best way.
 - [x] Null encode
 - [x] Int as string encode
 - [x] Float as string encode
+- [x] Ipv 4 encode
 - [x] List encode
 - [x] Map encode
