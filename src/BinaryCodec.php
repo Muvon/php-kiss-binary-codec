@@ -2,6 +2,7 @@
 namespace Muvon\KISS;
 
 // Max \x08
+// In case adding new type add it to reserve map
 define('BC_BOOL',   "\x01");
 define('BC_LIST',   "\x02");
 define('BC_KEY',    "\x03");
@@ -14,11 +15,92 @@ define('BC_IPV4',   "\x08");
 final class BinaryCodec {
   const VERSION = 1;
 
+  // Reserved map includes a-z A-Z _ / 0-9 \0
+  // 0-8, 47-57, 65-90, 95, 97-122
+  // last \xff
+  const COMPRESS_MAP = [
+    // Custom pack related
+    BC_IPV4 . 'a/' => "\x9", BC_BOOL . 'C/' => "\xa",
+    BC_NULL . 'C/' => "\xb", BC_DEC . 'a/' => "\xc",
+    BC_NUM . 'a/' => "\xd", BC_LIST . 'N/' => "\xe",
+    BC_HASH . 'N/' => "\xf", BC_KEY . 'C/' => "\x10",
+    // Pack related
+    'c/' => "\x11", 'C/' => "\x12", 'n/' => "\x13",
+    'N/' => "\x14", 'H8/' => "\x15", 'H16/' => "\x16",
+    'H32/' => "\x17", 'H64/' => "\x18", 'H128/' => "\x19",
+    'E/' => "\x1a", 'G/' => "\x1b", 'J/' => "\x1c",
+    'q/' => "\x1d", 's/' => "\x1e",
+    // Numbers
+    '1/' => "\x1f", '2/' => "\x20", '3/' => "\x21",
+    '4/' => "\x22", '5/' => "\x23", '6/' => "\x24",
+    '7/' => "\x25", '8/' => "\x26", '9/' => "\x27",
+    '0/' => "\x28",
+    '10' => "\xdb", '11' => "\xdc", '12' => "\xdd",
+    '13' => "\xf8", "14" => "\xdf", "15" => "\xe0",
+    '16' => "\xe1", '17' => "\xe2", '18' => "\xe3",
+    '19' => "\xe4",
+    // Key related
+    'created' => "\x29", 'updated' => "\x2a",
+    'email' => "\x2b", 'state' => "\x2c",
+    'value' => "\xd6", 'amount' => "\xd7",
+    'status' => "\xfb", 'accept' => "\xfc",
+    'cancel' => "\xfd", 
+    'list' => "\xd5", 'http' => "\xf4",
+    'info' => "\xf6",
+    'time' => "\x2d", 'diff' => "\x2e", 'size' => "\x3a",
+    'name' => "\x3b", 'full' => "\x3c",
+    'next' => "\x3e", 'prev' => "\x3f", 'hash' => "\x40",
+    'has_' => "\x5b", 'ver' => "\x5c", 'ght' => "\x5d",
+    'age' => "\xfa", 'dat' => "\x3d",
+    'ous' => "\x5e", 'can' => "\xd4", 'ete' => "\x60",
+    'use' => "\x7b", 'cur' => "\x7c", 'ble' => "\x7d",
+    'ful' => "\x7e", 'ash' => "\x7f", 'err' => "\x80",
+    'dex' => "\x81", 'val' => "\x82", 'log' => "\xd3",
+    'pub' => "\xd8", 'key' => "\xd9", 'amp' => "\xda",
+    'act' => "\xe7", 'ion' => "\xe8", 'lat' => "\xf3",
+    'lon' => "\xf1", 'ili' => "\xf7", 'ing' => "\xf2",
+    'oes' => "\xf9",
+    'es' => "\xf0", 'vo' => "\xfe", 'mi' => "\xff",
+    'ti' => "\xea", 'fi' => "\xeb", 'if' => "\xec",
+    'ev' => "\xed", 'os' => "\xee", 're' => "\xef",
+    'tx' => "\x83", 'ts' => "\xde", 'ph' => "\xe9",
+    'is' => "\x84", 'gr' => "\x85", 'no' => "\x86",
+    'nc' => "\x87", 'mm' => "\x88", 'on' => "\x89",
+    'sh' => "\x8a", 'pp' => "\x8b", 'at' => "\x8c",
+    'ha' => "\x8d", 'id' => "\xe5", 'uu' => "\xe6",
+    'ss' => "\x8e", 'bl' => "\x8f", 'na' => "\x90",
+    'me' => "\x91", 'ee' => "\x92", 'oo' => "\x93",
+    'll' => "\x94", 'rr' => "\x95", 'ne' => "\x96",
+    'si' => "\x97", 'ck' => "\x98", 'to' => "\x99",
+    'ei' => "\x9a", 'be' => "\x9b", 'of' => "\x9c",
+    'in' => "\x9d", 'ou' => "\x9e", 'er' => "\x9f",
+    'do' => "\xa0", 'ba' => "\xa1", 'se' => "\xa2",
+    'st' => "\xa3", 'th' => "\xa4", 'rt' => "\xa5",
+    'nd' => "\xa6", 'an' => "\xa7", 'ny' => "\xa8",
+    'up' => "\xa9", 'ed' => "\xaa", 'ce' => "\xab",
+    'ld' => "\xac", 've' => "\xad", 'rk' => "\xae",
+    'nt' => "\xaf", 'lt' => "\xb0", 'fy' => "\xb1",
+    'ty' => "\xb2", 'or' => "\xb3", 'cu' => "\xb4",
+    'di' => "\xb5", 'ch' => "\xb6", 'tr' => "\xb7",
+    'bi' => "\xb8", 'nd' => "\xb9", 'ex' => "\xba",
+    'tt' => "\xbb", 'ca' => "\xbc", 'ke' => "\xbd",
+    'co' => "\xbe", 'cc' => "\xbf", 'su' => "\xc0",
+    'ok' => "\xc1", 'pr' => "\xc2", 'du' => "\xc3",
+    // Non changed characters with separated symbol
+    'y/' => "\xc4", 'h/' => "\xc5", 'r/' => "\xc6",
+    'n/' => "\xc7", 't/' => "\xc8", 'd/' => "\xc9",
+    'e/' => "\xca", 'a/' => "\xcb", 'k/' => "\xcc",
+    'x/' => "\xcd", '/w' => "\xce", 'a/' => "\xcf",
+    'f/' => "\xd0", '/n' => "\xd1", '/h' => "\xd2",
+  ];
+
   protected array $key_map;
   protected int $key_idx = 0;
   protected array $format;
 
-  protected final function __construct() {}
+  protected final function __construct() {
+    $this->decompress_map = array_flip(static::COMPRESS_MAP);
+  }
 
   public static function create(): self {
     return new static;
@@ -35,7 +117,7 @@ final class BinaryCodec {
 
     array_push($parts, ...$this->encode($data));
     $format_str = implode('/', $this->format);
-    $flow = gzencode($format_str . "\0" . implode("/", array_keys($this->key_map)));
+    $flow = $this->compress($format_str . "\0" . implode("/", array_keys($this->key_map)));
 
     return pack(
       'CNa*' . strtr($format_str, [
@@ -86,7 +168,7 @@ final class BinaryCodec {
   public function unpack(string $binary): array {
     $version = unpack('C', $binary[0])[1];
     $meta_len = hexdec(bin2hex($binary[1] . $binary[2] . $binary[3] . $binary[4]));
-    return $this->decode(gzdecode(substr($binary, 5, $meta_len)), substr($binary, 5 + $meta_len));
+    return $this->decode($this->decompress(substr($binary, 5, $meta_len)), substr($binary, 5 + $meta_len));
   }
 
   protected function decode(string $meta, string $binary): mixed {
@@ -256,5 +338,13 @@ final class BinaryCodec {
     }
 
     return $format;
+  }
+
+  protected function compress(string $string): string {
+    return strtr($string, static::COMPRESS_MAP);
+  }
+
+  protected function decompress(string $binary): string {
+    return strtr($binary, $this->decompress_map);
   }
 }
