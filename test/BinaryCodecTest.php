@@ -93,6 +93,14 @@ class BinaryCodecTest extends TestCase {
     ]);
   }
 
+  public function testIpv4Encode(): void {
+    $this->testInputs([
+      ['127.123.11.1', '0.0.0.0'],
+      ['125.234.32.33'],
+      ['2555.34.34.34', '300.255.255.255'],
+    ]);
+  }
+
   public function testListEncode(): void {
     $this->testInputs([
       range(0, 100),

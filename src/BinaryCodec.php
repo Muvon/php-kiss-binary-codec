@@ -1,7 +1,7 @@
 <?php
 namespace Muvon\KISS;
 
-// Max \x07
+// Max \x08
 define('BC_BOOL',   "\x01");
 define('BC_LIST',   "\x02");
 define('BC_KEY',    "\x03");
@@ -9,6 +9,7 @@ define('BC_NUM',    "\x04");
 define('BC_NULL',   "\x05");
 define('BC_HASH',   "\x06");
 define('BC_DEC',    "\x07");
+define('BC_IPV4',   "\x08");
 
 final class BinaryCodec {
   const VERSION = 1;
@@ -40,7 +41,7 @@ final class BinaryCodec {
       'CNa*' . strtr($format_str, [
         '/' => '', BC_HASH => '', BC_KEY => '',
         BC_LIST => '', BC_BOOL => '', BC_NULL => '',
-        BC_NUM => '', BC_DEC => ''
+        BC_NUM => '', BC_DEC => '', BC_IPV4 => ''
       ]),
       static::VERSION,
       strlen($flow),
@@ -95,7 +96,7 @@ final class BinaryCodec {
     foreach (explode('/', strtok($meta, "\0")) as $f) {
       $key = 'n' . ($i++);
       $prefix = match ($f[0]) {
-        BC_NULL, BC_NUM, BC_BOOL, BC_LIST, BC_KEY, BC_HASH, BC_DEC => substr($f, 1),
+        BC_NULL, BC_NUM, BC_BOOL, BC_LIST, BC_KEY, BC_HASH, BC_DEC, BC_IPV4 => substr($f, 1),
         default => $f,
       };
 
@@ -121,6 +122,7 @@ final class BinaryCodec {
           BC_NUM => gmp_strval(gmp_init(bin2hex($v), 16)),
           BC_BOOL => !!$v,
           BC_DEC => bcdiv(gmp_strval(gmp_init(bin2hex(substr($v, 1)), 16), 10), gmp_strval(gmp_pow(10, $fraction = unpack('C', $v[0])[1])), $fraction),
+          BC_IPV4 => long2ip(unpack('N', $v)[1]),
           default => $v,
         };
 
@@ -231,8 +233,13 @@ final class BinaryCodec {
           $data = pack('C', $fraction) . hex2bin($val);
           break;
 
-        case is_string($data) && trim($data, '0..9A..Fa..f') == '':
+        case is_string($data) && trim($data, '0..9A..Fa..f') === '':
           $format = 'H';
+          break;
+
+        case is_string($data) && !isset($data[15]) && filter_var($data, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4):
+          $format = BC_IPV4 . 'a';
+          $data = pack('N', ip2long($data));
           break;
 
         case is_bool($data):
