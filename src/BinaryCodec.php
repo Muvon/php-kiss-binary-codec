@@ -198,15 +198,14 @@ final class BinaryCodec {
 
   protected function getDataFormat(mixed &$data): string {
     $format = match(true) {
-      is_int($data) && $data > 0 && $data < 255 => 'C',
-      is_int($data) && $data > -128 && $data < 127 => 'c',
-      is_int($data) && $data > 0 && $data < 65535 => 'n',
-      is_int($data) && $data > -32768 && $data < 32767 => 's',
-      is_int($data) && $data > 0 && $data < 4294967295 => 'N',
-      is_int($data) && $data > -2147483648 && $data < 2147483647 => 'l',
-      is_int($data) && $data > 0 && $data < 4294967295 => 'N',
-      is_int($data) && $data > -9223372036854775808 && $data < 9223372036854775807 => 'q',
-      is_int($data) && $data > 0 && $data < 18446744073709551615 => 'J',
+      is_int($data) && $data >= 0 && $data <= 255 => 'C',
+      is_int($data) && $data >= -128 && $data <= 127 => 'c',
+      is_int($data) && $data >= 0 && $data <= 65535 => 'n',
+      is_int($data) && $data >= -32768 && $data <= 32767 => 's',
+      is_int($data) && $data >= 0 && $data <= 4294967295 => 'N',
+      is_int($data) && $data >= -2147483648 && $data <= 2147483647 => 'l',
+      is_int($data) && $data >= 0 && $data <= 18446744073709551615 => 'J',
+      is_int($data) && $data >= -9223372036854775808 && $data <= 9223372036854775807 => 'q',
       is_double($data) => 'E',
       is_float($data) => 'G',
       default => 'a',
