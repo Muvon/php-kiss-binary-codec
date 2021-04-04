@@ -112,7 +112,7 @@ final class BinaryCodec {
     $this->key_map = [];
 
     $parts = [];
-    $this->format[] = (key($data) === 0 ? BC_LIST : BC_HASH). 'N';
+    $this->format[] = (array_key_first($data) === 0 ? BC_LIST : BC_HASH). 'N';
     $parts = [sizeof($data)];
 
     array_push($parts, ...$this->encode($data));
@@ -120,11 +120,7 @@ final class BinaryCodec {
     $flow = $this->compress($format_str . "\0" . implode("/", array_keys($this->key_map)));
 
     return pack(
-      'CNa*' . strtr($format_str, [
-        '/' => '', BC_HASH => '', BC_KEY => '',
-        BC_LIST => '', BC_BOOL => '', BC_NULL => '',
-        BC_NUM => '', BC_DEC => '', BC_IPV4 => ''
-      ]),
+      'CNa*' . str_replace(['/', BC_HASH, BC_KEY, BC_LIST, BC_BOOL, BC_NULL, BC_NUM, BC_DEC, BC_IPV4], '', $format_str),
       static::VERSION,
       strlen($flow),
       $flow,
@@ -148,7 +144,7 @@ final class BinaryCodec {
         // Can be list or hash array
         if (is_array($v)) {
           $sz = sizeof($v);
-          $this->format[] = (key($v) === 0 || $sz === 0)
+          $this->format[] = (array_key_first($v) === 0 || $sz === 0)
             ? BC_LIST . 'N'
             : BC_HASH . 'N'
           ;
@@ -167,7 +163,8 @@ final class BinaryCodec {
 
   public function unpack(string $binary): array {
     $version = unpack('C', $binary[0])[1];
-    $meta_len = hexdec(bin2hex($binary[1] . $binary[2] . $binary[3] . $binary[4]));
+    [, $meta_len] = unpack('N', $binary[1] . $binary[2] . $binary[3] . $binary[4]);
+    // $meta_len = hexdec(bin2hex($binary[1] . $binary[2] . $binary[3] . $binary[4]));
     return $this->decode($this->decompress(substr($binary, 5, $meta_len)), substr($binary, 5 + $meta_len));
   }
 
