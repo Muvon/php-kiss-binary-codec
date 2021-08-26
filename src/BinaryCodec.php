@@ -6,24 +6,26 @@ namespace Muvon\KISS;
 define('BC_BOOL',   "\x01");
 define('BC_LIST',   "\x02");
 define('BC_KEY',    "\x03");
-define('BC_NUM',    "\x04");
+define('BC_INT',    "\x04");
 define('BC_NULL',   "\x05");
 define('BC_HASH',   "\x06");
 define('BC_DEC',    "\x07");
 define('BC_IPV4',   "\x08");
+define('BC_UINT',   "\x09");
 
 final class BinaryCodec {
   const VERSION = 1;
 
   // Reserved map includes a-z A-Z _ / 0-9 \0
-  // 0-8, 47-57, 65-90, 95, 97-122
+  // 0-9, 47-57, 65-90, 95, 97-122
   // last \xff
   const COMPRESS_MAP = [
     // Custom pack related
-    BC_IPV4 . 'a/' => "\x9", BC_BOOL . 'C/' => "\xa",
-    BC_NULL . 'C/' => "\xb", BC_DEC . 'a/' => "\xc",
-    BC_NUM . 'a/' => "\xd", BC_LIST . 'N/' => "\xe",
+    BC_IPV4 . 'a/' => "\x12", BC_BOOL . 'C/' => "\xa",
+    BC_NULL . 'C/' => "\xb", BC_INT . 'a' => "\xc",
+    BC_LIST . 'N/' => "\xe",
     BC_HASH . 'N/' => "\xf", BC_KEY . 'C/' => "\x10",
+    BC_UINT . 'a' => "\xd",
     // Pack related
     'c/' => "\x11", 'C/' => "\x12", 'n/' => "\x13",
     'N/' => "\x14", 'H8/' => "\x15", 'H16/' => "\x16",
@@ -120,7 +122,7 @@ final class BinaryCodec {
     $flow = $this->compress($format_str . "\0" . implode("/", array_keys($this->key_map)));
 
     return pack(
-      'CNa*' . str_replace(['/', BC_HASH, BC_KEY, BC_LIST, BC_BOOL, BC_NULL, BC_NUM, BC_DEC, BC_IPV4], '', $format_str),
+      'CNa*' . str_replace(['/', BC_HASH, BC_KEY, BC_LIST, BC_BOOL, BC_NULL, BC_DEC, BC_IPV4, BC_INT, BC_UINT], '', $format_str),
       static::VERSION,
       strlen($flow),
       $flow,
@@ -175,7 +177,7 @@ final class BinaryCodec {
     foreach (explode('/', strtok($meta, "\0")) as $f) {
       $key = 'n' . ($i++);
       $prefix = match ($f[0]) {
-        BC_NULL, BC_NUM, BC_BOOL, BC_LIST, BC_KEY, BC_HASH, BC_DEC, BC_IPV4 => substr($f, 1),
+        BC_NULL, BC_BOOL, BC_LIST, BC_KEY, BC_HASH, BC_DEC, BC_IPV4, BC_INT, BC_UINT => substr($f, 1),
         default => $f,
       };
 
@@ -198,12 +200,17 @@ final class BinaryCodec {
       if (isset($keys[$k])) {
         $v = match ($keys[$k]) {
           BC_NULL => null,
-          BC_NUM => gmp_strval(gmp_init(bin2hex($v), 16)),
           BC_BOOL => !!$v,
           BC_DEC => bcdiv(gmp_strval(gmp_init(bin2hex(substr($v, 1)), 16), 10), gmp_strval(gmp_pow(10, $fraction = unpack('C', $v[0])[1])), $fraction),
           BC_IPV4 => long2ip(unpack('N', $v)[1]),
+          BC_UINT => VarInt::readUint(bin2hex($v)),
+          BC_INT => VarInt::readInt(bin2hex($v)),
           default => $v,
         };
+
+        if ($keys[$k] === BC_UINT || $keys[$k] === BC_INT) {
+          $v = $v[0];
+        }
 
         if ($keys[$k] === BC_LIST) {
           $ns[] = $v;
@@ -277,14 +284,7 @@ final class BinaryCodec {
 
   protected function getDataFormat(mixed &$data): string {
     $format = match(true) {
-      is_int($data) && $data >= 0 && $data <= 255 => 'C',
-      is_int($data) && $data >= -128 && $data <= 127 => 'c',
-      is_int($data) && $data >= 0 && $data <= 65535 => 'n',
-      is_int($data) && $data >= -32768 && $data <= 32767 => 's',
-      is_int($data) && $data >= 0 && $data <= 4294967295 => 'N',
-      is_int($data) && $data >= -2147483648 && $data <= 2147483647 => 'l',
-      is_int($data) && $data >= 0 && $data <= 18446744073709551615 => 'J',
-      is_int($data) && $data >= -9223372036854775808 && $data <= 9223372036854775807 => 'q',
+      is_numeric($data) && trim($data, '-0..9') === '' => 'a',
       is_double($data) => 'E',
       is_float($data) => 'G',
       default => 'a',
@@ -292,13 +292,14 @@ final class BinaryCodec {
 
     if ($format === 'a') {
       switch (true) {
-        case is_numeric($data) && $data[0] !== '0' && trim($data, '0..9') === '':
-          $val = gmp_strval(gmp_init($data, 10), 16);
-          if (strlen($val) % 2 !== 0) {
-            $val = '0' . $val;
-          }
-          $format = BC_NUM . 'a';
-          $data = hex2bin($val);
+        case is_numeric($data) && $data >= 0 && trim($data, '0..9') === '':
+          $format = BC_UINT . 'a';
+          $data = hex2bin(VarInt::packUint($data));
+          break;
+        
+        case is_numeric($data) && $data < 0 && trim($data, '-0..9') === '':
+          $format = BC_INT . 'a';
+          $data = hex2bin(VarInt::packInt($data));
           break;
 
         case is_numeric($data) && str_contains($data, '.') && (ltrim($data, '0')[0] === '.' || $data[0] !== '0') && trim($data, '0..9.') === '':
