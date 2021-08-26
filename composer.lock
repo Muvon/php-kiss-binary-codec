@@ -4,8 +4,59 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5edb07c7ee04bb59396cb9f6772d56cd",
-    "packages": [],
+    "content-hash": "e711ad1ce641e4fc92735fc727c7ab5d",
+    "packages": [
+        {
+            "name": "muvon/kiss-varint",
+            "version": "0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Muvon/php-kiss-varint.git",
+                "reference": "fbf597b114cde1da2fd0bca54a902994eb46bad3"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Muvon/php-kiss-varint/zipball/fbf597b114cde1da2fd0bca54a902994eb46bad3",
+                "reference": "fbf597b114cde1da2fd0bca54a902994eb46bad3",
+                "shasum": ""
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^10"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Muvon\\KISS\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Muvon Co. Ltd",
+                    "email": "contact@muvon.io"
+                }
+            ],
+            "description": "varint read and pack convertion int/uint",
+            "keywords": [
+                "bitclout",
+                "decoder",
+                "encoder",
+                "int",
+                "kiss",
+                "lightweight",
+                "uint",
+                "varint"
+            ],
+            "support": {
+                "issues": "https://github.com/Muvon/php-kiss-varint/issues",
+                "source": "https://github.com/Muvon/php-kiss-varint/tree/0.2.0"
+            },
+            "time": "2021-08-17T10:08:27+00:00"
+        }
+    ],
     "packages-dev": [
         {
             "name": "doctrine/instantiator",
@@ -1766,5 +1817,5 @@
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "2.0.0"
+    "plugin-api-version": "2.1.0"
 }

@@ -28,5 +28,8 @@
     "files": [
       "src/functions.php"
     ]
+  },
+  "require": {
+    "muvon/kiss-varint": "^0.2.0"
   }
 }
